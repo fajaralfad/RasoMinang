@@ -45,4 +45,61 @@ Aplikasi ini mampu mengenali **9 jenis makanan tradisional Minangkabau** dengan 
 - 📱 **Responsive UI** – Optimal di berbagai ukuran layar  
 - 🎨 **Material Design 3** – Tampilan modern & ramah pengguna  
 - 🔒 **API Key Authentication** – Akses aman ke backend  
-- ⚡ **Performance Optimized** – Kompresi dan caching gambar  
+- ⚡ **Performance Optimized** – Kompresi dan caching gambar 
+
+## 🚀 Installation & Setup
+
+### 📦 Prasyarat
+- Flutter SDK >= 3.0.0  
+- Dart SDK >= 3.0.0  
+- Android Studio / VS Code  
+- FastAPI Backend aktif  
+
+---
+
+### 💻 Langkah Instalasi
+```bash
+# Clone repository
+git clone https://github.com/your-username/minang-food-classifier.git
+cd minang-food-classifier
+
+# Install dependencies
+flutter pub get
+```
+### ⚙️ Konfigurasi API
+
+Edit file berikut: lib/core/constants/api_constants.dart
+```bash
+class ApiConstants {
+  static const String baseUrl = 'https://your-railway-app.railway.app';
+  static const String apiKey = 'your-actual-api-key';
+}
+```
+
+### 🎯 Cara Penggunaan
+
+- Buka aplikasi dan tap “Pilih Gambar”
+- Pilih sumber: Kamera atau Galeri
+- Tunggu proses klasifikasi
+- Lihat hasil beserta confidence score
+- Akses riwayat prediksi di ikon History
+
+### ▶️ Jalankan Aplikasi dan 🧪 Testing
+```bash
+flutter run
+flutter test
+```
+## 🔗 Links
+
+### 🧠 [Backend & Model Repository: FastAPI + MobileNetV3 (Fine-tuning & API Deployment)](https://github.com/fajaralfad/klasifikasi-makanan-minangkabau-mobilenetV3)
+
+Berisi model **MobileNetV3** yang telah di-*fine-tune* serta implementasi **FastAPI** untuk menyediakan layanan klasifikasi makanan Minangkabau.  
+Model sudah termasuk di dalam repository ini bersama dengan backend.
+
+---
+
+### 📑 [API Documentation: Swagger UI](https://klasifikasi-makanan-minangkabau.up.railway.app)
+
+Dapat diakses melalui endpoint **`/docs`** saat backend dijalankan secara lokal atau di server (Railway).
+
+
