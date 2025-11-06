@@ -1,16 +1,2 @@
-# klasifikasi_makanan_minang
-
-A new Flutter project.
-
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+# RasoMinang
+Aplikasi Flutter untuk mengklasifikasikan makanan khas Minangkabau dengan bantuan FastAPI-based Machine Learning API. Aplikasi ini menggunakan model MobileNetV3 yang telah di-deploy di Railway, dan memungkinkan pengguna untuk mengunggah gambar makanan, mendapatkan hasil klasifikasi, serta menampilkan confidence score secara real-time.
