@@ -1,11 +1,16 @@
+// screens/home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/classification_provider.dart';
-import '../widgets/prediction_result_card.dart';
-import '../widgets/image_picker_bottom_sheet.dart';
+import '../providers/home_provider.dart';
+import '../../presentation/widgets/home/prediction_result_card.dart';
+import '../../presentation/widgets/home/image_picker_bottom_sheet.dart';
 import '../widgets/loading_overlay.dart';
-import '../screens/history_screen.dart';
-import '../widgets/custom_app_bar.dart';
+import '../../presentation/widgets/home/home_header_section.dart';
+import '../../presentation/widgets/home/home_action_section.dart';
+import '../../presentation/widgets/home/home_error_widget.dart';
+import '../../presentation/widgets/home/home_app_bar.dart';
+import 'history_screen.dart';
 import 'camera_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -19,12 +24,19 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ClassificationProvider>().loadPredictionHistory();
-    });
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
+    await Provider.of<HomeProvider>(context, listen: false).initializeApp();
+    await Provider.of<ClassificationProvider>(context, listen: false)
+        .loadPredictionHistory();
   }
 
   void _showImagePicker() {
+    Provider.of<HomeProvider>(context, listen: false)
+        .logInteraction('image_picker_opened');
+    
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -37,16 +49,35 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _classifyImage(String imagePath) {
-    context.read<ClassificationProvider>().classifyImage(imagePath);
+    Provider.of<HomeProvider>(context, listen: false)
+        .logInteraction('image_classification_started');
+    
+    Provider.of<ClassificationProvider>(context, listen: false)
+        .classifyImage(imagePath);
   }
 
   void _openCamera() {
+    Provider.of<HomeProvider>(context, listen: false)
+        .logInteraction('camera_opened');
+    
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => CameraScreen(
           onImageCaptured: _classifyImage,
         ),
+      ),
+    );
+  }
+
+  void _openHistory() {
+    Provider.of<HomeProvider>(context, listen: false)
+        .logInteraction('history_opened');
+    
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const HistoryScreen(),
       ),
     );
   }
@@ -70,21 +101,14 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             child: IconButton(
               icon: const Icon(Icons.history, color: Colors.white),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const HistoryScreen(),
-                  ),
-                );
-              },
+              onPressed: _openHistory,
               tooltip: 'Riwayat Prediksi',
             ),
           ),
         ],
       ),
-      body: Consumer<ClassificationProvider>(
-        builder: (context, provider, child) {
+      body: Consumer2<ClassificationProvider, HomeProvider>(
+        builder: (context, classificationProvider, homeProvider, child) {
           return Stack(
             children: [
               SingleChildScrollView(
@@ -95,15 +119,23 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _buildHeaderSection(context, size, isSmallScreen),
+                    HomeHeaderSection(
+                      isSmallScreen: isSmallScreen,
+                      isDark: isDark,
+                    ),
                     SizedBox(height: isSmallScreen ? 24 : 32),
-                    _buildActionSection(context, provider, size, isSmallScreen),
+                    HomeActionSection(
+                      onPickImage: _showImagePicker,
+                      isSmallScreen: isSmallScreen,
+                      isDark: isDark,
+                    ),
                     SizedBox(height: isSmallScreen ? 24 : 32),
-                    _buildResultSection(provider, isDark),
+                    _buildResultSection(classificationProvider, isDark),
                   ],
                 ),
               ),
-              if (provider.isLoading) const LoadingOverlay(),
+              if (classificationProvider.isLoading || homeProvider.isInitializing) 
+                const LoadingOverlay(),
             ],
           );
         },
@@ -111,190 +143,12 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildHeaderSection(BuildContext context, Size size, bool isSmallScreen) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return Column(
-      children: [
-        Container(
-          width: isSmallScreen ? 100 : 140,
-          height: isSmallScreen ? 100 : 140,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: isDark
-                  ? [
-                      Colors.grey.shade800.withOpacity(0.3),
-                      Colors.grey.shade900.withOpacity(0.1),
-                    ]
-                  : [
-                      Theme.of(context).primaryColor.withOpacity(0.2),
-                      Theme.of(context).primaryColor.withOpacity(0.05),
-                    ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: isDark 
-                    ? Colors.black.withOpacity(0.5)
-                    : Theme.of(context).primaryColor.withOpacity(0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Container(
-            margin: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isDark ? Colors.grey.shade800 : Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
-            child: ClipOval(
-              child: Image.asset(
-                'assets/images/icon-minang.png',
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Icon(
-                    Icons.restaurant,
-                    size: isSmallScreen ? 40 : 60,
-                    color: Theme.of(context).primaryColor,
-                  );
-                },
-              ),
-            ),
-          ),
-        ),
-        SizedBox(height: isSmallScreen ? 12 : 16),
-        Text(
-          'Klasifikasi Makanan Minangkabau',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            fontSize: isSmallScreen ? 18 : 22,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        SizedBox(height: isSmallScreen ? 6 : 8),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 8 : 16),
-          child: Text(
-            'Unggah foto makanan untuk mengidentifikasi jenis makanan Minangkabau tradisional',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-              fontSize: isSmallScreen ? 13 : 14,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionSection(BuildContext context, ClassificationProvider provider, Size size, bool isSmallScreen) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return Card(
-      elevation: isDark ? 2 : 4,
-      color: isDark ? Colors.grey.shade800 : Colors.white,
-      child: Padding(
-        padding: EdgeInsets.all(isSmallScreen ? 16 : 24),
-        child: Column(
-          children: [
-            Icon(
-              Icons.photo_camera,
-              size: isSmallScreen ? 48 : 64,
-              color: Theme.of(context).primaryColor,
-            ),
-            SizedBox(height: isSmallScreen ? 12 : 16),
-            Text(
-              'Pilih Gambar Makanan',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontSize: isSmallScreen ? 18 : 20,
-              ),
-            ),
-            SizedBox(height: isSmallScreen ? 4 : 8),
-            Text(
-              'Gunakan kamera atau pilih dari galeri',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: isSmallScreen ? 16 : 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _showImagePicker,
-                icon: const Icon(Icons.add_photo_alternate),
-                label: Text(
-                  'Pilih Gambar',
-                  style: TextStyle(
-                    fontSize: isSmallScreen ? 14 : 16,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(
-                    vertical: isSmallScreen ? 14 : 16,
-                    horizontal: 24,
-                  ),
-                  backgroundColor: Theme.of(context).primaryColor,
-                  foregroundColor: Colors.white,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildResultSection(ClassificationProvider provider, bool isDark) {
     if (provider.error != null) {
-      return Card(
-        color: isDark ? Colors.red.shade900.withOpacity(0.3) : Colors.red.shade50,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.error, color: isDark ? Colors.red.shade300 : Colors.red.shade700),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      provider.error!,
-                      style: TextStyle(
-                        color: isDark ? Colors.red.shade300 : Colors.red.shade700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: _showImagePicker,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: isDark ? Colors.red.shade300 : Colors.red.shade700,
-                    side: BorderSide(
-                      color: isDark ? Colors.red.shade300 : Colors.red.shade700,
-                    ),
-                  ),
-                  child: const Text('Coba Lagi'),
-                ),
-              ),
-            ],
-          ),
-        ),
+      return HomeErrorWidget(
+        errorMessage: provider.error!,
+        onRetry: _showImagePicker,
+        isDark: isDark,
       );
     }
 
